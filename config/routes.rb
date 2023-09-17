@@ -27,11 +27,14 @@ Rails.application.routes.draw do
     end
   end
 
+  get '/get-qrcode', to: 'qr_code#get_hash_code', as: 'qr_code_getter_proxy'
+
   get '/api', to: 'api#index'
   namespace :api, defaults: { format: 'json' } do
     namespace :v1 do
       # ----------------------------------
       # start of account scoped api routes
+
       resources :accounts, only: [:create, :show, :update] do
         member do
           post :update_active_at
@@ -65,7 +68,9 @@ Rails.application.routes.draw do
             post :attach_file, on: :collection
           end
           resources :sla_policies, only: [:index, :create, :show, :update, :destroy]
-          resources :campaigns, only: [:index, :create, :show, :update, :destroy]
+          resources :campaigns, only: [:index, :create, :show, :update, :destroy] do
+            
+          end
           resources :dashboard_apps, only: [:index, :show, :create, :update, :destroy]
           namespace :channels do
             resource :twilio_channel, only: [:create]

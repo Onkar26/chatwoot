@@ -1,30 +1,39 @@
 <template>
   <div class="wizard-body columns content-box small-9">
-    <empty-state
-      :title="$t('INBOX_MGMT.FINISH.TITLE')"
+    <woot-q-r-code
+      v-if="isApiInbox"
+      :title="$t('INBOX_MGMT.ADD.API_CHANNEL.FINISH.TITLE')"
       :message="message"
-      :button-text="$t('INBOX_MGMT.FINISH.BUTTON_TEXT')"
-    >
-      <div class="medium-12 columns text-center">
-        <div class="website--code">
+      :inboxId="currentInbox.id"
+      :qr-data="qrData"
+    />
+    <div v-else class="wizard-body columns content-box small-9">
+      <!-- <empty-state
+        :display="!isApiInbox"
+        :title="$t('INBOX_MGMT.FINISH.TITLE')"
+        :message="message"
+        :button-text="$t('INBOX_MGMT.FINISH.BUTTON_TEXT')"
+      /> -->
+      <div class="w-full text-center">
+        <div class="my-4 mx-auto max-w-[70%]">
           <woot-code
             v-if="currentInbox.web_widget_script"
             :script="currentInbox.web_widget_script"
           />
         </div>
-        <div class="medium-6 small-offset-3">
+        <div class="w-[50%] max-w-[50%] ml-[25%]">
           <woot-code
             v-if="isATwilioInbox"
             lang="html"
             :script="currentInbox.callback_webhook_url"
           />
         </div>
-        <div v-if="isWhatsAppCloudInbox" class="medium-6 small-offset-3">
-          <p class="config--label">
+        <div v-if="isWhatsAppCloudInbox" class="w-[50%] max-w-[50%] ml-[25%]">
+          <p class="text-slate-700 dark:text-slate-200 font-medium mt-8">
             {{ $t('INBOX_MGMT.ADD.WHATSAPP.API_CALLBACK.WEBHOOK_URL') }}
           </p>
           <woot-code lang="html" :script="currentInbox.callback_webhook_url" />
-          <p class="config--label">
+          <p class="text-slate-700 dark:text-slate-200 font-medium mt-8">
             {{
               $t(
                 'INBOX_MGMT.ADD.WHATSAPP.API_CALLBACK.WEBHOOK_VERIFICATION_TOKEN'
@@ -36,14 +45,14 @@
             :script="currentInbox.provider_config.webhook_verify_token"
           />
         </div>
-        <div class="medium-6 small-offset-3">
+        <div class="w-[50%] max-w-[50%] ml-[25%]">
           <woot-code
             v-if="isALineInbox"
             lang="html"
             :script="currentInbox.callback_webhook_url"
           />
         </div>
-        <div class="medium-6 small-offset-3">
+        <div class="w-[50%] max-w-[50%] ml-[25%]">
           <woot-code
             v-if="isASmsInbox"
             lang="html"
@@ -52,13 +61,13 @@
         </div>
         <div
           v-if="isAEmailInbox && !currentInbox.provider"
-          class="medium-6 small-offset-3"
+          class="w-[50%] max-w-[50%] ml-[25%]"
         >
           <woot-code lang="html" :script="currentInbox.forward_to_email" />
         </div>
-        <div class="footer">
+        <div class="flex justify-center gap-2 mt-4">
           <router-link
-            class="button hollow primary settings-button"
+            class="button hollow primary"
             :to="{
               name: 'settings_inbox_show',
               params: { inboxId: this.$route.params.inbox_id },
@@ -77,23 +86,28 @@
           </router-link>
         </div>
       </div>
-    </empty-state>
+    </div>
   </div>
 </template>
 
 <script>
 import configMixin from 'shared/mixins/configMixin';
-import EmptyState from '../../../../components/widgets/EmptyState';
+// import EmptyState from '../../../../components/widgets/EmptyState';
 
 export default {
-  components: {
-    EmptyState,
-  },
+  // components: {
+  //   EmptyState,
+  // },
   mixins: [configMixin],
   computed: {
     currentInbox() {
       return this.$store.getters['inboxes/getInbox'](
         this.$route.params.inbox_id
+      );
+    },
+    qrData() {
+      return this.$store.getters['inboxes/getInbox'](
+        this.$route.params.qr_data
       );
     },
     isATwilioInbox() {
@@ -113,6 +127,9 @@ export default {
         this.currentInbox.channel_type === 'Channel::Whatsapp' &&
         this.currentInbox.provider === 'whatsapp_cloud'
       );
+    },
+    isApiInbox() {
+      return this.currentInbox.channel_type === 'Channel::Api';
     },
     message() {
       if (this.isATwilioInbox) {
@@ -147,31 +164,12 @@ export default {
         return this.$t('INBOX_MGMT.FINISH.WEBSITE_SUCCESS');
       }
 
+      if (this.isApiInbox) {
+        return this.$t('INBOX_MGMT.ADD.API_CHANNEL.FINISH.MESSAGE');
+      }
+
       return this.$t('INBOX_MGMT.FINISH.MESSAGE');
     },
   },
 };
 </script>
-<style lang="scss" scoped>
-@import '~dashboard/assets/scss/variables';
-
-.website--code {
-  margin: $space-normal auto;
-  max-width: 70%;
-}
-
-.footer {
-  display: flex;
-  justify-content: center;
-}
-
-.settings-button {
-  margin-right: var(--space-small);
-}
-
-.config--label {
-  color: var(--b-600);
-  font-weight: var(--font-weight-medium);
-  margin-top: var(--space-large);
-}
-</style>

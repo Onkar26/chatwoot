@@ -4,7 +4,7 @@
       :header-title="$t('CAMPAIGN.ADD.TITLE')"
       :header-content="$t('CAMPAIGN.ADD.DESC')"
     />
-    <form class="row" @submit.prevent="addCampaign">
+    <form v-if="!isWhatsapp" class="row" @submit.prevent="addCampaign">
       <div class="medium-12 columns">
         <woot-input
           v-model="title"
@@ -43,7 +43,7 @@
             {{ $t('CAMPAIGN.ADD.FORM.MESSAGE.ERROR') }}
           </span>
         </label>
-
+        <!-- --------------------------------------------------------------------------------------------------------------------------- -->
         <label :class="{ error: $v.selectedInbox.$error }">
           {{ $t('CAMPAIGN.ADD.FORM.INBOX.LABEL') }}
           <select v-model="selectedInbox" @change="onChangeInbox($event)">
@@ -167,6 +167,7 @@
         </woot-button>
       </div>
     </form>
+    <whatsapp-campaign-form v-if="isWhatsapp" :prevent="addCampaign" />
   </div>
 </template>
 
@@ -179,11 +180,13 @@ import campaignMixin from 'shared/mixins/campaignMixin';
 import WootDateTimePicker from 'dashboard/components/ui/DateTimePicker.vue';
 import { URLPattern } from 'urlpattern-polyfill';
 import { CAMPAIGNS_EVENTS } from '../../../../helper/AnalyticsHelper/events';
+import WhatsappCampaignForm from './WhatsappCampaignForm.vue';
 
 export default {
   components: {
     WootDateTimePicker,
     WootMessageEditor,
+    WhatsappCampaignForm,
   },
 
   mixins: [alertMixin, campaignMixin],
@@ -201,6 +204,7 @@ export default {
       scheduledAt: null,
       selectedAudience: [],
       senderList: [],
+      selectedContact: [],
     };
   },
 
@@ -247,6 +251,13 @@ export default {
         },
       };
     }
+
+    if (this.isWhatsapp) {
+      return {
+        ...commonValidations,
+      };
+    }
+
     return {
       ...commonValidations,
       selectedAudience: {
@@ -262,10 +273,15 @@ export default {
       audienceList: 'labels/getLabels',
     }),
     inboxes() {
-      if (this.isOngoingType) {
+      if (this.isOngoingType)
         return this.$store.getters['inboxes/getWebsiteInboxes'];
-      }
-      return this.$store.getters['inboxes/getSMSInboxes'];
+
+      if (this.isOnOffType) return this.$store.getters['inboxes/getSMSInboxes'];
+
+      if (this.isWhatsapp)
+        return this.$store.getters['inboxes/getWhatsAppInboxes'];
+
+      return this.$store.getters['inboxes/getInboxes'];
     },
     sendersAndBotList() {
       return [
@@ -341,6 +357,7 @@ export default {
     async addCampaign() {
       this.$v.$touch();
       if (this.$v.$invalid) {
+        bus.$emit('newToastMessage', this.$v);
         return;
       }
       try {
@@ -366,5 +383,13 @@ export default {
 <style lang="scss" scoped>
 ::v-deep .ProseMirror-woot-style {
   height: 8rem;
+}
+
+.contact--form {
+  padding: var(--space-normal) var(--space-large) var(--space-large);
+
+  .columns {
+    padding: 0 var(--space-smaller);
+  }
 }
 </style>
